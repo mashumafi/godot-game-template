@@ -15,12 +15,12 @@ var _params := {} # params caching
 var _loading_start_time := 0
 
 @onready var _history := preload("res://addons/ggt-core/scenes/scenes-history.gd").new()
-@onready
-var _loader_mt := preload("res://addons/ggt-core/utils/resource_multithread_loader.gd").new()
+@onready var _loader_mt := preload("res://addons/ggt-core/utils/resource_async_loader.gd").new()
 var config := preload("res://addons/ggt-core/config.tres")
 
 
 func _ready():
+	add_child(_loader_mt)
 	_loader_mt.resource_stage_loaded.connect(Transitions._on_resource_stage_loaded)
 	change_started.connect(_on_change_started)
 	process_mode = Node.PROCESS_MODE_ALWAYS
