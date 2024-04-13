@@ -11,20 +11,18 @@ extends Node
 signal change_started
 signal change_finished
 
-var _params = {} # params caching
-var _loading_start_time = 0
+var _params := {} # params caching
+var _loading_start_time := 0
 
-@onready var transitions = get_node("/root/Transitions")
-@onready var _history = preload("res://addons/ggt-core/scenes/scenes-history.gd").new()
+@onready var _history := preload("res://addons/ggt-core/scenes/scenes-history.gd").new()
 @onready
-var _loader_mt = preload("res://addons/ggt-core/utils/resource_multithread_loader.gd").new()
-var config = preload("res://addons/ggt-core/config.tres")
+var _loader_mt := preload("res://addons/ggt-core/utils/resource_multithread_loader.gd").new()
+var config := preload("res://addons/ggt-core/config.tres")
 
 
 func _ready():
-	if transitions:
-		_loader_mt.connect("resource_stage_loaded", transitions._on_resource_stage_loaded)
-	connect("change_started", _on_change_started)
+	_loader_mt.resource_stage_loaded.connect(Transitions._on_resource_stage_loaded)
+	change_started.connect(_on_change_started)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	var cur_scene: Node = get_tree().current_scene
 	_history.add(cur_scene.scene_file_path, {})
@@ -42,7 +40,7 @@ func get_last_loaded_scene_data() -> SceneData:
 
 
 func _set_new_scene(resource: PackedScene):
-	var current_scene = get_tree().current_scene
+	var current_scene := get_tree().current_scene
 	current_scene.queue_free()
 	await current_scene.tree_exited  # wait for the current scene to be fully removed
 	var instanced_scn: Node = resource.instantiate()  # triggers _init
@@ -50,45 +48,42 @@ func _set_new_scene(resource: PackedScene):
 	get_tree().current_scene = instanced_scn
 	if instanced_scn.has_method("pre_start"):
 		await instanced_scn.pre_start(_params)
-	if transitions:
-		transitions.fade_out()
-	if transitions:
-		await transitions.anim.animation_finished
+	Transitions.fade_out()
+	await Transitions.anim.animation_finished
 	if instanced_scn.has_method("start"):
 		instanced_scn.start()
-	emit_signal("change_finished")
+	change_finished.emit()
 	_params = {}
 	_loading_start_time = 0
 
 
-func _transition_appear(params):
-	if transitions:
-		transitions.fade_in(params)
+func _transition_appear(params: Dictionary):
+	Transitions.fade_in(params)
 
 
 # Multithread interactive loading
-func change_scene_multithread(new_scene: String, params = {}):
-	emit_signal("change_started", new_scene, params)
+func change_scene_multithread(new_scene: String, params := {}):
+	change_started.emit(new_scene, params)
 	_params = params
 	_loading_start_time = Time.get_ticks_msec()
 	_transition_appear(params)
-	_loader_mt.connect("resource_loaded", _on_resource_loaded, CONNECT_ONE_SHOT)
-	await transitions.transition_covered_screen
+	_loader_mt.resource_loaded.connect(_on_resource_loaded, CONNECT_ONE_SHOT)
+	await Transitions.transition_covered_screen
 	_loader_mt.load_resource(new_scene)
 
 
-func _on_change_started(new_scene, params):
+func _on_change_started(new_scene: String, params: Dictionary):
 	_history.add(new_scene, params)
 
 
-func _on_resource_loaded(resource):
-	if transitions and transitions.is_transition_in_playing():
-		await transitions.anim.animation_finished
-	var load_time = Time.get_ticks_msec() - _loading_start_time  # ms
+func _on_resource_loaded(resource: PackedScene):
+	if Transitions.is_transition_in_playing():
+		await Transitions.anim.animation_finished
+	var load_time := Time.get_ticks_msec() - _loading_start_time  # ms
 	print(
 		"{scn} loaded in {elapsed}ms".format({"scn": resource.resource_path, "elapsed": load_time})
 	)
 	# artificially wait some time in order to have a gentle scene transition
-	if transitions and load_time < config.transitions_minimum_duration_ms:
+	if load_time < config.transitions_minimum_duration_ms:
 		await get_tree().create_timer((config.transitions_minimum_duration_ms - load_time) / 1000.0).timeout
 	_set_new_scene(resource)

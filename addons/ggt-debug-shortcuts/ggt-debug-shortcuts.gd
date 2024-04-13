@@ -37,7 +37,7 @@ func save_project_settings():
 
 
 func create_input_action(keycode: Key):
-	var trigger = InputEventKey.new()
+	var trigger := InputEventKey.new()
 	trigger.keycode = keycode
 	return {
 		"deadzone": 0.5,
@@ -46,7 +46,7 @@ func create_input_action(keycode: Key):
 
 
 func register_input_mappings(on_project_settings_changed: Callable):
-	var dirty = false
+	var dirty := false
 	for k in default_debug_shortcuts:
 		var v = default_debug_shortcuts[k]
 		if ProjectSettings.has_setting(k):

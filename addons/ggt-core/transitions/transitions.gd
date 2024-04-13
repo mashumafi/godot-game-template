@@ -4,8 +4,8 @@
 extends CanvasLayer
 
 signal progress_bar_filled
-signal transition_started(anim_name)
-signal transition_finished(anim_name)
+signal transition_started(anim_name: String)
+signal transition_finished(anim_name: String)
 signal transition_covered_screen
 
 
@@ -13,7 +13,7 @@ signal transition_covered_screen
 @onready var progress: Control = $ColorRect/MarginContainer/Progress
 
 var target_progress: float = 0.0
-var config = preload("res://addons/ggt-core/config.tres")
+var config := preload("res://addons/ggt-core/config.tres")
 
 
 func _ready():
@@ -31,9 +31,9 @@ func is_transition_in_playing():
 
 
 # appear
-func fade_in(params = {}):
+func fade_in(params := {}):
 	progress.hide()
-	if params and params.get("show_progress_bar") == true:
+	if params.get("show_progress_bar") == true:
 		progress.show()
 	anim.play("transition-in")
 
@@ -42,13 +42,11 @@ func fade_in(params = {}):
 func fade_out():
 	if progress.visible and not progress.is_completed():
 		await self.progress_bar_filled
-	anim.connect(
-		"animation_finished", Callable(self, "_on_fade_out_finished").bind(), CONNECT_ONE_SHOT
-	)
+	anim.animation_finished.connect(_on_fade_out_finished, CONNECT_ONE_SHOT)
 	anim.play("transition-out")
 
 
-func _on_fade_out_finished(cur_anim):
+func _on_fade_out_finished(cur_anim: String):
 	if cur_anim == "transition-out":
 		progress.bar.value = 0
 
@@ -59,11 +57,11 @@ func _update_progress_bar(progress_ratio: float):
 	target_progress = progress_ratio
 
 
-func _process(delta):
+func _process(delta: float):
 	progress.bar.value = move_toward(progress.bar.value, target_progress, delta)
-	if progress.bar.value > 0.99 and target_progress == 1.0:
+	if target_progress > 0.0 and is_equal_approx(progress.bar.value, target_progress):
 		await get_tree().create_timer(.4).timeout
-		emit_signal("progress_bar_filled")
+		progress_bar_filled.emit()
 		set_process(false)
 
 
@@ -71,22 +69,20 @@ func _process(delta):
 func _on_resource_stage_loaded(progress_percentage: float):
 	if progress.visible:
 		_update_progress_bar(progress_percentage)
-	else:
-		pass
 
 
-func _on_AnimationPlayer_animation_finished(anim_name):
+func _on_AnimationPlayer_animation_finished(anim_name: String):
 	if anim_name == "transition-out":
-		emit_signal("transition_finished", anim_name)
+		transition_finished.emit(anim_name)
 		if config.pause_scenes_on_transitions:
 			get_tree().paused = false
 	elif anim_name == "transition-in":
-		emit_signal("transition_covered_screen")
+		transition_covered_screen.emit()
 
 
-func _on_AnimationPlayer_animation_started(anim_name):
+func _on_AnimationPlayer_animation_started(anim_name: String):
 	if anim_name == "transition-in":
-		emit_signal("transition_started", anim_name)
+		transition_started.emit(anim_name)
 		if config.pause_scenes_on_transitions:
 			get_tree().paused = true
 

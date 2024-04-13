@@ -1,7 +1,7 @@
 extends Control
 
-@onready var btn_play = $MarginContainer/Control/VBoxContainer/PlayButton
-@onready var btn_exit = $MarginContainer/Control/VBoxContainer/ExitButton
+@onready var btn_play : Button = $MarginContainer/Control/VBoxContainer/PlayButton
+@onready var btn_exit : Button = $MarginContainer/Control/VBoxContainer/ExitButton
 
 
 func _ready():
@@ -12,7 +12,7 @@ func _ready():
 
 
 func _on_PlayButton_pressed() -> void:
-	var params = {
+	var params := {
 		"show_progress_bar": true,
 		"a_number": 10,
 		"a_string": "Ciao!",
@@ -27,11 +27,9 @@ func _on_PlayButton_pressed() -> void:
 
 func _on_ExitButton_pressed() -> void:
 	# gently shutdown the game
-	var transitions = get_node_or_null("/root/Transitions")
-	if transitions:
-		transitions.fade_in({
-			'show_progress_bar': false
-		})
-		await transitions.anim.animation_finished
-		await get_tree().create_timer(0.3).timeout
+	Transitions.fade_in({
+		'show_progress_bar': false
+	})
+	await Transitions.anim.animation_finished
+	await get_tree().create_timer(0.3).timeout
 	get_tree().quit()

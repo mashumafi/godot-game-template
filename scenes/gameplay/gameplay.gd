@@ -1,11 +1,11 @@
 extends Node
 
-var elapsed = 0
+var elapsed := 0.0
 
 
 # `pre_start()` is called when a scene is loaded.
 # Use this function to receive params from `Game.change_scene(params)`.
-func pre_start(params):
+func pre_start(params: Dictionary):
 	var cur_scene: Node = get_tree().current_scene
 	print("Scene loaded: ", cur_scene.name, " (", cur_scene.scene_file_path, ")")
 	if params:
@@ -20,7 +20,7 @@ func start():
 	print("gameplay.gd: start() called")
 
 
-func _process(delta):
+func _process(delta: float):
 	elapsed += delta
 	$Sprite2D.position.x = Game.size.x / 2 + 150 * sin(2 * 0.4 * PI * elapsed)
 	$Sprite2D.position.y = Game.size.y / 2 + 100 * sin(2 * 0.2 * PI * elapsed)

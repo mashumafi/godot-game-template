@@ -2,8 +2,8 @@ class_name SceneData
 extends RefCounted
 
 var path: String = ""
-var params = null
+var params := {}
 
 
-func _to_string():
+func _to_string() -> String:
 	return path + " | params: " + str(params)

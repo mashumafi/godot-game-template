@@ -1,35 +1,35 @@
 extends RefCounted
 
-signal resource_loaded(res)
-signal resource_stage_loaded(progress_percentage)
+signal resource_loaded(res: Resource)
+signal resource_stage_loaded(progress_percentage: float)
 
-const SIMULATED_DELAY_MS = 32
+const SIMULATED_DELAY_MS := 32
 
-var thread
+var thread : Thread
 var stages_amount: int
 
 
-func load_resource(path):
+func load_resource(path: String):
 	if thread == null:
 		thread = Thread.new()
 	if ResourceLoader.has_cached(path):
 		return ResourceLoader.load(path)
 	else:
-		var state = thread.start(Callable(self, "_thread_load").bind(path))
+		var state := thread.start(_thread_load.bind(path))
 		if state != OK:
 			push_error("Error while starting thread: " + str(state))
 
 
-func _thread_load(path):
-	var status = ResourceLoader.load_threaded_request(path)
+func _thread_load(path: String):
+	var status := ResourceLoader.load_threaded_request(path)
 	if status != OK:
 		push_error(status, "threaded resource failed")
 		return
-	var res = null
-	var progress_arr = []
+	var res : Resource = null
+	var progress_arr : Array[float] = []
 
 	while true:
-		var loading_status = ResourceLoader.load_threaded_get_status(path, progress_arr)
+		var loading_status := ResourceLoader.load_threaded_get_status(path, progress_arr)
 		if loading_status == ResourceLoader.THREAD_LOAD_LOADED:
 			call_deferred("emit_signal", "resource_stage_loaded", float(progress_arr[0]))
 			res = ResourceLoader.load_threaded_get(path)
@@ -41,12 +41,12 @@ func _thread_load(path):
 			push_error("Thread invalid resource: {0}".format([path]))
 		else:
 			call_deferred("emit_signal", "resource_stage_loaded", float(progress_arr[0]))
-			pass
+
 		OS.delay_msec(SIMULATED_DELAY_MS)
-	call_deferred("_thread_done", res)
+	_thread_done.call_deferred(res)
 
 
-func _thread_done(resource):
+func _thread_done(resource: Resource):
 	assert(resource)
 	# Always wait for threads to finish, this is required on Windows.
 	thread.wait_to_finish()
